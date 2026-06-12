@@ -1,0 +1,82 @@
+<!-- 繼承共同版型 -->
+{% extends "base.html" %}
+
+<!-- 頁面內容開始 -->
+{% block content %}
+
+<!-- 首頁主視覺卡片 -->
+<section class="hero-card">
+    <div>
+        <span class="tag">Open Data Analysis</span>
+        <h2>求職前，先查詢公開勞動違規紀錄</h2>
+        <p>
+            本系統整合政府公開違反勞動法令資料，將不同來源的事業單位名稱、
+            違反法規、違規內容與處分金額進行欄位標準化與分類整理，
+            提供公司查詢、求職摘要卡與趨勢視覺化分析。
+        </p>
+
+        <!-- 搜尋表單 -->
+        <form class="search-box" action="/search" method="get">
+            <input type="text" name="keyword" placeholder="輸入公司名稱，例如：星河科技">
+            <button type="submit">查詢公開紀錄</button>
+        </form>
+
+        <!-- 如果重新整理資料成功，就顯示提示 -->
+        {% if refreshed %}
+        <div class="notice success">資料已重新整理完成。</div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- 統計卡片 -->
+<section class="summary-grid">
+    <div class="summary-card">
+        <span>公開紀錄筆數</span>
+        <strong>{{ summary.total_records }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>事業單位數</span>
+        <strong>{{ summary.company_count }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>涵蓋縣市／主管機關</span>
+        <strong>{{ summary.city_count }}</strong>
+    </div>
+
+    <div class="summary-card warning">
+        <span>重複出現事業單位</span>
+        <strong>{{ summary.repeated_company_count }}</strong>
+    </div>
+</section>
+
+<!-- 功能介紹 -->
+<section class="feature-grid">
+    <div class="feature-card">
+        <h3>公司公開紀錄查詢</h3>
+        <p>輸入公司名稱後，系統會搜尋公開資料中的事業單位名稱，整理相關公告紀錄。</p>
+    </div>
+
+    <div class="feature-card">
+        <h3>違規類型分類</h3>
+        <p>依違規內容關鍵字，將資料分類為工時、薪資、休假、職安等求職者較容易理解的類型。</p>
+    </div>
+
+    <div class="feature-card">
+        <h3>求職參考摘要</h3>
+        <p>系統會整理公開紀錄筆數、最近公告日期、主要違規類型與處分金額，作為求職參考。</p>
+    </div>
+</section>
+
+<!-- 使用限制提醒 -->
+<section class="info-card">
+    <h2>使用提醒</h2>
+    <p>
+        本系統僅整理政府公開資料中已公告之違反勞動法令紀錄，
+        不代表對公司整體工作環境或雇主品質進行評價。
+        查詢結果應作為求職前了解公開紀錄之參考。
+    </p>
+</section>
+
+{% endblock %}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <!-- 設定網頁編碼，避免中文亂碼 -->
+    <meta charset="UTF-8">
+
+    <!-- 設定響應式網頁，讓手機與電腦都能正常顯示 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- 網頁標題 -->
+    <title>JobCheck 求職公開紀錄分析系統</title>
+
+    <!-- 載入 CSS 樣式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <!-- 頁首區塊 -->
+    <header class="site-header">
+        <!-- 系統名稱 -->
+        <h1>JobCheck 求職公開紀錄分析系統</h1>
+
+        <!-- 系統副標題 -->
+        <p>Public Labor Violation Record Analysis System</p>
+
+        <!-- 導覽列 -->
+        <nav class="navbar">
+            <a href="/">首頁</a>
+            <a href="/search">公司查詢</a>
+            <a href="/dashboard">趨勢儀表板</a>
+            <a href="/records">公開紀錄</a>
+            <a href="/about">資料處理說明</a>
+        </nav>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="container">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="site-footer">
+        <p>Python｜Flask｜Pandas｜Requests｜Regex｜SQLite Ready｜Docker｜Government Open Data</p>
+    </footer>
+</body>
+</html>

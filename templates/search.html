@@ -1,0 +1,103 @@
+<!-- 繼承共同版型 -->
+{% extends "base.html" %}
+
+<!-- 頁面內容開始 -->
+{% block content %}
+
+<!-- 頁面標題 -->
+<h2 class="page-title">公司公開紀錄查詢</h2>
+
+<!-- 查詢表單 -->
+<section class="search-panel">
+    <form class="search-box" action="/search" method="get">
+        <input type="text" name="keyword" value="{{ keyword }}" placeholder="輸入公司名稱或關鍵字">
+        <button type="submit">查詢</button>
+    </form>
+</section>
+
+<!-- 如果使用者有輸入關鍵字，就顯示摘要卡 -->
+{% if keyword %}
+<section class="result-card {% if company_summary.has_records %}has-record{% else %}no-record{% endif %}">
+    <span class="tag">求職參考摘要</span>
+
+    <h3>查詢關鍵字：{{ company_summary.keyword }}</h3>
+
+    <div class="result-grid">
+        <div>
+            <span>公開紀錄筆數</span>
+            <strong>{{ company_summary.record_count }}</strong>
+        </div>
+
+        <div>
+            <span>涉及事業單位</span>
+            <strong>{{ company_summary.company_count }}</strong>
+        </div>
+
+        <div>
+            <span>最近公告日期</span>
+            <strong>{{ company_summary.latest_date }}</strong>
+        </div>
+
+        <div>
+            <span>主要違規類型</span>
+            <strong>{{ company_summary.main_category }}</strong>
+        </div>
+
+        <div>
+            <span>累計處分金額</span>
+            <strong>{{ "{:,}".format(company_summary.total_penalty) }} 元</strong>
+        </div>
+
+        <div>
+            <span>最高處分金額</span>
+            <strong>{{ "{:,}".format(company_summary.max_penalty) }} 元</strong>
+        </div>
+    </div>
+
+    <p class="result-message">{{ company_summary.message }}</p>
+</section>
+{% endif %}
+
+<!-- 查詢結果表格 -->
+{% if records %}
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>公告日期</th>
+                <th>縣市／機關</th>
+                <th>事業單位</th>
+                <th>違規類型</th>
+                <th>違反法規</th>
+                <th>違規內容</th>
+                <th>處分金額</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.announce_date }}</td>
+                <td>{{ record.city }}</td>
+                <td>{{ record.company_name }}</td>
+                <td><span class="badge">{{ record.violation_category }}</span></td>
+                <td>{{ record.violated_law }}</td>
+                <td>{{ record.violation_content }}</td>
+                <td>{{ "{:,}".format(record.penalty_amount) }} 元</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% elif keyword %}
+<section class="empty-card">
+    <h3>沒有查到公開紀錄</h3>
+    <p>
+        目前系統資料中沒有找到符合「{{ keyword }}」的公開違規紀錄。
+        這不代表該公司完全沒有勞動爭議，只代表目前資料集中未查得相關公開紀錄。
+    </p>
+</section>
+{% endif %}
+
+{% endblock %}

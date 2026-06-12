@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}趨勢儀表板｜JobCheck{% endblock %}
+
+{% block content %}
+<section class="page-header dashboard-header">
+    <span class="tag">Dashboard</span>
+    <h1>趨勢儀表板</h1>
+    <p>
+        系統依據勞動部動態下載之公開資料，整理公開紀錄筆數、縣市分布、違規類型與重複出現事業單位。
+    </p>
+</section>
+
+<section class="stats-grid">
+    <div class="stat-card">
+        <p>公開紀錄筆數</p>
+        <h2>{{ summary.total_records | default(0) }}</h2>
+    </div>
+
+    <div class="stat-card">
+        <p>事業單位數</p>
+        <h2>{{ summary.total_companies | default(0) }}</h2>
+    </div>
+
+    <div class="stat-card">
+        <p>涵蓋縣市 / 主管機關</p>
+        <h2>{{ summary.total_cities | default(0) }}</h2>
+    </div>
+
+    <div class="stat-card warning">
+        <p>重複出現事業單位</p>
+        <h2>{{ summary.repeated_companies | default(0) }}</h2>
+    </div>
+</section>
+
+<section class="dashboard-layout">
+    <div class="dashboard-panel large-panel">
+        <div class="panel-title-row">
+            <div>
+                <span class="panel-kicker">Category</span>
+                <h2>違規類型分布</h2>
+            </div>
+            <p>依違規內容關鍵字分類，協助快速理解主要問題類型。</p>
+        </div>
+
+        {% if category_items %}
+            <div class="bar-list">
+                {% for item in category_items %}
+                <div class="bar-row">
+                    <div class="bar-label">
+                        <span>{{ item.name }}</span>
+                        <strong>{{ item.value }} 筆</strong>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ item.percent | default(0) }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">目前沒有可顯示的分類資料。</p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-panel large-panel">
+        <div class="panel-title-row">
+            <div>
+                <span class="panel-kicker">Region</span>
+                <h2>縣市 / 主管機關分布</h2>
+            </div>
+            <p>呈現目前成功下載與匯入的縣市公開紀錄分布。</p>
+        </div>
+
+        {% if city_items %}
+            <div class="bar-list">
+                {% for item in city_items %}
+                <div class="bar-row">
+                    <div class="bar-label">
+                        <span>{{ item.name }}</span>
+                        <strong>{{ item.value }} 筆</strong>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ item.percent | default(0) }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">目前沒有可顯示的縣市資料。</p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-panel">
+        <div class="panel-title-row">
+            <div>
+                <span class="panel-kicker">Company</span>
+                <h2>重複出現事業單位 Top 10</h2>
+            </div>
+        </div>
+
+        {% if top_company_items %}
+            <div class="rank-list">
+                {% for item in top_company_items %}
+                <div class="rank-row">
+                    <span class="rank-number">{{ loop.index }}</span>
+                    <span class="rank-name">{{ item.name }}</span>
+                    <strong>{{ item.value }} 筆</strong>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">目前沒有重複出現事業單位資料。</p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-panel">
+        <div class="panel-title-row">
+            <div>
+                <span class="panel-kicker">Source</span>
+                <h2>資料來源統計</h2>
+            </div>
+        </div>
+
+        {% if source_items %}
+            <div class="rank-list">
+                {% for item in source_items %}
+                <div class="rank-row">
+                    <span class="rank-number">{{ loop.index }}</span>
+                    <span class="rank-name">{{ item.name }}</span>
+                    <strong>{{ item.value }} 筆</strong>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">目前沒有資料來源統計。</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

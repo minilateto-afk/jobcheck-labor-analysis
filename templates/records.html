@@ -1,0 +1,49 @@
+<!-- 繼承共同版型 -->
+{% extends "base.html" %}
+
+<!-- 頁面內容開始 -->
+{% block content %}
+
+<!-- 頁面標題 -->
+<h2 class="page-title">公開紀錄列表</h2>
+
+<!-- 說明卡片 -->
+<section class="info-card">
+    <p>
+        本頁顯示系統整理後的公開違反勞動法令紀錄。資料已經過欄位標準化、
+        日期格式清理、處分金額轉換與違規類型分類。
+    </p>
+</section>
+
+<!-- 資料表格 -->
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>公告日期</th>
+                <th>縣市／機關</th>
+                <th>事業單位</th>
+                <th>分類</th>
+                <th>違反法規</th>
+                <th>違規內容</th>
+                <th>處分金額</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.announce_date }}</td>
+                <td>{{ record.city }}</td>
+                <td>{{ record.company_name }}</td>
+                <td><span class="badge">{{ record.violation_category }}</span></td>
+                <td>{{ record.violated_law }}</td>
+                <td>{{ record.violation_content }}</td>
+                <td>{{ "{:,}".format(record.penalty_amount) }} 元</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
