@@ -1,135 +1,134 @@
-# 匯入 pandas，用來整理 DataFrame
+# 匯入 pandas，用來建立 DataFrame
 import pandas as pd
 
-# 匯入系統統一欄位
+# 匯入系統標準欄位
 from config import STANDARD_COLUMNS
 
 
-# 從多個可能欄位名稱中找到實際存在的欄位
-def find_column(df, possible_names):
-    # 逐一檢查可能欄位名稱
-    for name in possible_names:
-        # 如果欄位存在，就回傳該欄位名稱
-        if name in df.columns:
-            return name
+# 找出最符合的欄位名稱
+def find_column(df_columns, candidates):
+    # 第一輪：完全比對
+    for candidate in candidates:
+        for col in df_columns:
+            if candidate == col:
+                return col
 
-    # 如果都找不到，就回傳 None
+    # 第二輪：包含比對
+    for candidate in candidates:
+        for col in df_columns:
+            if candidate in col:
+                return col
+
+    # 找不到就回傳 None
     return None
 
 
-# 從原始資料中安全取得欄位
-def get_series_or_empty(df, column_name):
-    # 如果欄位名稱存在，就回傳該欄位
-    if column_name is not None and column_name in df.columns:
-        return df[column_name]
+# 將不同來源欄位轉成系統統一欄位
+def normalize_columns(df, source_name):
+    # 複製資料，避免直接修改原始 df
+    df = df.copy()
 
-    # 如果欄位不存在，就回傳空字串 Series
-    return pd.Series([""] * len(df))
-
-
-# 將不同縣市資料欄位統一成系統欄位
-def normalize_labor_data(raw_df, source_name):
-    # 複製原始資料，避免直接修改
-    df = raw_df.copy()
-
-    # 去除欄位名稱前後空白
+    # 清理欄位名稱前後空白
     df.columns = [str(col).strip() for col in df.columns]
 
-    # 建立欄位對應表
-    column_map = {
+    # 建立標準化後 DataFrame
+    normalized_df = pd.DataFrame()
+
+    # 欄位候選名稱設定
+    column_candidates = {
         "city": [
+            "縣市／單位別",
+            "縣市/單位別",
             "縣市",
+            "縣市別",
+            "地方主管機關",
             "主管機關",
-            "公告機關",
-            "處分機關",
-            "發布機關",
+            "單位別",
         ],
         "authority": [
+            "縣市／單位別",
+            "縣市/單位別",
             "主管機關",
-            "公告機關",
             "處分機關",
-            "發布機關",
+            "單位別",
         ],
         "company_name": [
             "事業單位名稱",
-            "事業單位或事業主名稱",
-            "事業單位名稱或負責人",
+            "事業單位",
             "公司名稱",
-            "名稱",
+            "單位名稱",
+            "雇主名稱",
             "受處分事業單位",
+            "自然人姓名",
         ],
         "responsible_person": [
             "負責人",
-            "負責人姓名",
             "代表人",
-            "事業主姓名",
+            "事業主",
+            "事業單位名稱(負責人)",
+            "自然人姓名",
         ],
         "announce_date": [
             "公告日期",
             "公布日期",
-            "發布日期",
-            "公告年月",
+            "公告年月日",
         ],
         "penalty_date": [
             "處分日期",
             "裁處日期",
-            "裁罰日期",
             "處分年月日",
         ],
         "violated_law": [
+            "違反法規條款",
             "違反法規法條",
-            "違反法令條款",
-            "違反條文",
             "違法法規法條",
-            "法條",
+            "違反法令",
+            "違反條文",
+            "法規法條",
             "違反法規",
         ],
         "violation_content": [
+            "法條敘述",
             "違反法規內容",
-            "違規內容",
-            "違反事實",
             "違法事實",
-            "違反事項",
+            "違規內容",
+            "違反內容",
             "違法內容",
         ],
         "penalty_amount": [
-            "處分金額",
-            "裁罰金額",
+            "處分金額／滯納金",
             "罰鍰金額",
-            "罰鍰金額或滯納金",
+            "處分金額",
             "罰鍰",
+            "罰鍰金額或滯納金",
+            "罰鍰金額(元)",
         ],
         "note": [
             "備註",
+            "備註說明",
             "說明",
-            "備考",
+            "其他",
         ],
     }
 
-    # 建立標準化後的 DataFrame
-    normalized_df = pd.DataFrame()
-
     # 加入資料來源名稱
-    normalized_df["source_name"] = source_name
+    normalized_df["source_name"] = [source_name] * len(df)
 
-    # 逐一建立標準欄位
-    for standard_col, possible_names in column_map.items():
-        # 找出實際欄位名稱
-        actual_col = find_column(df, possible_names)
+    # 逐一對應標準欄位
+    for standard_col, candidates in column_candidates.items():
+        # 找出原始資料中最符合的欄位
+        matched_col = find_column(df.columns, candidates)
 
-        # 取得欄位資料或空值
-        normalized_df[standard_col] = get_series_or_empty(df, actual_col)
+        # 如果找到欄位，就複製資料
+        if matched_col:
+            normalized_df[standard_col] = df[matched_col]
+        else:
+            normalized_df[standard_col] = ""
 
-    # 先建立空的違規分類欄位，後續由 classifier 補上
-    normalized_df["violation_category"] = ""
-
-    # 確保所有標準欄位都存在
+    # 補齊所有標準欄位
     for col in STANDARD_COLUMNS:
         if col not in normalized_df.columns:
             normalized_df[col] = ""
 
-    # 只保留標準欄位
-    normalized_df = normalized_df[STANDARD_COLUMNS]
-
-    # 回傳標準化後資料
-    return normalized_df
+    # 回傳固定欄位順序
+    return normalized_df[STANDARD_COLUMNS]

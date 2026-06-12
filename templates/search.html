@@ -1,103 +1,114 @@
-<!-- 繼承共同版型 -->
 {% extends "base.html" %}
 
-<!-- 頁面內容開始 -->
+{% block title %}公司查詢｜JobCheck{% endblock %}
+
 {% block content %}
+<section class="page-header">
+    <span class="tag">Company Search</span>
 
-<!-- 頁面標題 -->
-<h2 class="page-title">公司公開紀錄查詢</h2>
+    <h1>公司公開紀錄查詢</h1>
 
-<!-- 查詢表單 -->
-<section class="search-panel">
-    <form class="search-box" action="/search" method="get">
+    <p>
+        輸入公司名稱或關鍵字後，系統會搜尋勞動部公開資料中的事業單位名稱，
+        並整理相關公告紀錄、主要違規類型與公開紀錄觀察標籤。
+    </p>
+
+    <form class="search-form" action="/search" method="get">
         <input type="text" name="keyword" value="{{ keyword }}" placeholder="輸入公司名稱或關鍵字">
         <button type="submit">查詢</button>
     </form>
 </section>
 
-<!-- 如果使用者有輸入關鍵字，就顯示摘要卡 -->
 {% if keyword %}
-<section class="result-card {% if company_summary.has_records %}has-record{% else %}no-record{% endif %}">
-    <span class="tag">求職參考摘要</span>
-
-    <h3>查詢關鍵字：{{ company_summary.keyword }}</h3>
-
-    <div class="result-grid">
-        <div>
-            <span>公開紀錄筆數</span>
-            <strong>{{ company_summary.record_count }}</strong>
+<section class="result-summary">
+    {% if company_summary.found %}
+        <div class="stat-card">
+            <p>查詢關鍵字</p>
+            <h2>{{ company_summary.keyword }}</h2>
         </div>
 
-        <div>
-            <span>涉及事業單位</span>
-            <strong>{{ company_summary.company_count }}</strong>
+        <div class="stat-card">
+            <p>公開紀錄筆數</p>
+            <h2>{{ company_summary.total_records }}</h2>
         </div>
 
-        <div>
-            <span>最近公告日期</span>
-            <strong>{{ company_summary.latest_date }}</strong>
+        <div class="stat-card">
+            <p>主要違規類型</p>
+            <h2>{{ company_summary.main_category }}</h2>
         </div>
 
-        <div>
-            <span>主要違規類型</span>
-            <strong>{{ company_summary.main_category }}</strong>
+        <div class="stat-card warning">
+            <p>最近公告日期</p>
+            <h2>{{ company_summary.latest_date }}</h2>
         </div>
-
-        <div>
-            <span>累計處分金額</span>
-            <strong>{{ "{:,}".format(company_summary.total_penalty) }} 元</strong>
+    {% else %}
+        <div class="empty-state">
+            <h2>查無相關公開紀錄</h2>
+            <p>目前在已匯入的公開資料中，沒有找到包含「{{ keyword }}」的事業單位名稱。</p>
         </div>
+    {% endif %}
+</section>
 
+<section class="observation-panel">
+    <div class="observation-main {{ company_summary.observation_class }}">
         <div>
-            <span>最高處分金額</span>
-            <strong>{{ "{:,}".format(company_summary.max_penalty) }} 元</strong>
+            <p>公開紀錄觀察標籤</p>
+            <h2>{{ company_summary.observation_label }}</h2>
+            <span>{{ company_summary.observation_description }}</span>
         </div>
     </div>
 
-    <p class="result-message">{{ company_summary.message }}</p>
+    <div class="observation-note">
+        <h3>標籤說明</h3>
+        <p>
+            此標籤依目前匯入資料中的公開紀錄筆數產生，僅作為公開資料整理結果，
+            不代表對公司進行風險評分，也不代表求職建議。
+        </p>
+    </div>
 </section>
 {% endif %}
 
-<!-- 查詢結果表格 -->
 {% if records %}
-<div class="table-wrapper">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>公告日期</th>
-                <th>縣市／機關</th>
-                <th>事業單位</th>
-                <th>違規類型</th>
-                <th>違反法規</th>
-                <th>違規內容</th>
-                <th>處分金額</th>
-            </tr>
-        </thead>
+<section class="table-panel">
+    <h2>查詢結果</h2>
 
-        <tbody>
-            {% for record in records %}
-            <tr>
-                <td>{{ record.announce_date }}</td>
-                <td>{{ record.city }}</td>
-                <td>{{ record.company_name }}</td>
-                <td><span class="badge">{{ record.violation_category }}</span></td>
-                <td>{{ record.violated_law }}</td>
-                <td>{{ record.violation_content }}</td>
-                <td>{{ "{:,}".format(record.penalty_amount) }} 元</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>觀察標籤</th>
+                    <th>公告日期</th>
+                    <th>縣市 / 主管機關</th>
+                    <th>事業單位名稱</th>
+                    <th>同公司筆數</th>
+                    <th>違規類型</th>
+                    <th>違反法規</th>
+                    <th>法條敘述</th>
+                    <th>處分金額</th>
+                </tr>
+            </thead>
 
-{% elif keyword %}
-<section class="empty-card">
-    <h3>沒有查到公開紀錄</h3>
-    <p>
-        目前系統資料中沒有找到符合「{{ keyword }}」的公開違規紀錄。
-        這不代表該公司完全沒有勞動爭議，只代表目前資料集中未查得相關公開紀錄。
-    </p>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>
+                        <span class="record-label {{ record.observation_class }}">
+                            {{ record.observation_label }}
+                        </span>
+                    </td>
+                    <td>{{ record.announce_date }}</td>
+                    <td>{{ record.city }}</td>
+                    <td>{{ record.company_name }}</td>
+                    <td>{{ record.company_record_count }} 筆</td>
+                    <td>{{ record.violation_category }}</td>
+                    <td>{{ record.violated_law }}</td>
+                    <td>{{ record.violation_content }}</td>
+                    <td>{{ record.penalty_amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </section>
 {% endif %}
-
 {% endblock %}

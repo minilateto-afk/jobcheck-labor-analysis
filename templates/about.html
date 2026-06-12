@@ -1,148 +1,180 @@
-<!-- 繼承共同版型 -->
 {% extends "base.html" %}
 
-<!-- 頁面內容開始 -->
+{% block title %}專案說明｜JobCheck{% endblock %}
+
 {% block content %}
+<section class="page-header">
+    <span class="tag">Project Overview</span>
 
-<!-- 頁面標題 -->
-<h2 class="page-title">資料處理說明 Data Processing</h2>
-
-<!-- 專題定位 -->
-<section class="source-banner">
-    <strong>專題定位：</strong>
-    本系統以政府公開違反勞動法令資料為基礎，建立求職前可參考的公開紀錄查詢與趨勢分析系統。
-</section>
-
-<!-- 一、專題簡介 -->
-<section class="report-card">
-    <h3>一、專題簡介</h3>
-    <p>
-        本專題名稱為「基於公開違反勞動法令資料之求職參考分析系統」。
-        系統透過 Python 擷取政府公開資料，並使用 Pandas 進行欄位標準化、
-        資料清理與違規內容分類，最後以 Flask 網頁呈現公司查詢、摘要卡、
-        公開紀錄列表與趨勢儀表板。
-    </p>
+    <h1>專案說明：JobCheck 求職公開紀錄分析系統</h1>
 
     <p>
-        本系統不直接評價公司好壞，也不建立黑名單，而是將政府已公開之違反勞動法令紀錄整理成較容易閱讀的資料，
-        作為求職者投履歷或面試前了解公開紀錄的參考。
+        本專案以勞動部公開違反勞動法令資料為基礎，設計一套可自動下載、整理、查詢與視覺化的求職參考系統。
+        系統目的不是評斷企業好壞，而是將分散且不易閱讀的公開資料整理成較容易理解的資訊，
+        協助求職者在投遞履歷前多一項公開紀錄參考。
     </p>
 </section>
 
-<!-- 二、使用情境 -->
-<section class="report-card">
-    <h3>二、使用情境</h3>
-    <p>
-        使用者可在投履歷或面試前輸入公司名稱，查詢該事業單位是否曾出現在公開違反勞動法令資料中。
-        系統會整理公開紀錄筆數、最近公告日期、主要違規類型與處分金額，並以摘要卡方式呈現。
-    </p>
-</section>
-
-<!-- 三、資料處理流程 -->
-<section class="report-card">
-    <h3>三、資料處理流程</h3>
-
-    <div class="process-flow">
-        <span>政府公開資料</span>
-        <span>→</span>
-        <span>欄位標準化</span>
-        <span>→</span>
-        <span>資料清理</span>
-        <span>→</span>
-        <span>違規分類</span>
-        <span>→</span>
-        <span>Dashboard 呈現</span>
+<section class="project-summary-grid">
+    <div class="summary-box">
+        <p>目前匯入公開紀錄</p>
+        <h2>{{ summary.total_records }}</h2>
+        <span>筆資料</span>
     </div>
 
-    <p>
-        系統先使用 Requests 下載政府公開 CSV、Excel 或 ODS 資料，
-        再透過 Pandas 統一欄位名稱，處理日期格式、處分金額與空值。
-        接著依違規內容關鍵字進行規則式分類，最後輸出成統一 CSV，
-        供 Flask 頁面呈現查詢結果與統計圖表。
-    </p>
+    <div class="summary-box">
+        <p>事業單位數</p>
+        <h2>{{ summary.total_companies }}</h2>
+        <span>個單位</span>
+    </div>
+
+    <div class="summary-box">
+        <p>涵蓋縣市 / 主管機關</p>
+        <h2>{{ summary.total_cities }}</h2>
+        <span>個來源</span>
+    </div>
+
+    <div class="summary-box warning">
+        <p>重複出現事業單位</p>
+        <h2>{{ summary.repeated_companies }}</h2>
+        <span>個單位</span>
+    </div>
 </section>
 
-<!-- 四、欄位標準化 -->
-<section class="report-card">
-    <h3>四、欄位標準化</h3>
-    <p>
-        不同縣市資料欄位名稱可能不一致，因此系統建立欄位對應表，
-        將原始資料轉換為統一格式，方便後續分析。
-    </p>
+<section class="explain-panel">
+    <div class="section-heading">
+        <span class="tag">Data Pipeline</span>
+        <h2>資料處理流程</h2>
+        <p>系統將勞動部公開資料從原始檔案轉換成可查詢、可分類與可視覺化的分析結果。</p>
+    </div>
 
-    <table class="data-table">
-        <tr>
-            <th>原始欄位可能名稱</th>
-            <th>系統統一欄位</th>
-        </tr>
-        <tr>
-            <td>事業單位名稱、事業單位或事業主名稱、公司名稱</td>
-            <td>company_name</td>
-        </tr>
-        <tr>
-            <td>主管機關、公告機關、處分機關</td>
-            <td>city / authority</td>
-        </tr>
-        <tr>
-            <td>違反法規法條、違反法令條款、違反條文</td>
-            <td>violated_law</td>
-        </tr>
-        <tr>
-            <td>違反法規內容、違規內容、違反事實</td>
-            <td>violation_content</td>
-        </tr>
-        <tr>
-            <td>處分金額、裁罰金額、罰鍰金額</td>
-            <td>penalty_amount</td>
-        </tr>
-    </table>
+    <div class="pipeline-grid">
+        <div class="pipeline-card">
+            <span class="step-number">01</span>
+            <h3>動態下載公開資料</h3>
+            <p>
+                系統啟動時會連線至勞動部公開查詢系統，取得表單 token，
+                並以 POST 方式依縣市下載公開資料壓縮檔。
+            </p>
+        </div>
+
+        <div class="pipeline-card">
+            <span class="step-number">02</span>
+            <h3>解壓縮與格式修復</h3>
+            <p>
+                下載後自動解壓縮 zip，並處理官方 CSV 可能出現的表頭位置不固定、
+                欄位數不一致與中文編碼問題。
+            </p>
+        </div>
+
+        <div class="pipeline-card">
+            <span class="step-number">03</span>
+            <h3>欄位標準化</h3>
+            <p>
+                將不同縣市資料中的欄位統一整理為公司名稱、公告日期、處分日期、
+                違反法規、法條敘述與處分金額等標準欄位。
+            </p>
+        </div>
+
+        <div class="pipeline-card">
+            <span class="step-number">04</span>
+            <h3>資料清理與去重</h3>
+            <p>
+                清理公司名稱、拆分負責人、轉換金額格式，並依公司名稱、日期、
+                法規與法條敘述移除重複資料。
+            </p>
+        </div>
+
+        <div class="pipeline-card">
+            <span class="step-number">05</span>
+            <h3>違規類型分類</h3>
+            <p>
+                依關鍵字將資料分類為工時、薪資／加班費、休假、職安、勞退保險與職場平等等類型。
+            </p>
+        </div>
+
+        <div class="pipeline-card">
+            <span class="step-number">06</span>
+            <h3>查詢與視覺化</h3>
+            <p>
+                透過 Flask 網站提供公司查詢、公開紀錄列表、趨勢儀表板與求職參考摘要。
+            </p>
+        </div>
+    </div>
 </section>
 
-<!-- 五、違規分類規則 -->
-<section class="report-card">
-    <h3>五、違規類型分類規則</h3>
-    <p>
-        系統使用規則式關鍵字分類，將法規文字整理成求職者較容易理解的類型。
-        此分類僅作為資料整理，不代表法律判斷。
-    </p>
+<section class="explain-panel">
+    <div class="section-heading">
+        <span class="tag">Label Design</span>
+        <h2>公開紀錄觀察標籤</h2>
+        <p>
+            為避免將公司主觀標籤化，系統不使用「風險分數」或「黑名單」，
+            而是以公開紀錄筆數與重複出現情形，提供中性的觀察標籤。
+        </p>
+    </div>
 
-    <table class="data-table">
-        <tr>
-            <th>分類</th>
-            <th>常見判斷關鍵字</th>
-        </tr>
-        <tr>
-            <td>工時問題</td>
-            <td>延長工時、出勤紀錄、工作時間、休息時間</td>
-        </tr>
-        <tr>
-            <td>薪資／加班費問題</td>
-            <td>工資、加班費、未全額給付、最低工資</td>
-        </tr>
-        <tr>
-            <td>休假問題</td>
-            <td>例假、休息日、特別休假、國定假日</td>
-        </tr>
-        <tr>
-            <td>勞退／保險問題</td>
-            <td>勞工退休金、提繳、就業保險</td>
-        </tr>
-        <tr>
-            <td>職業安全問題</td>
-            <td>職業安全衛生、職災、防護措施</td>
-        </tr>
-    </table>
+    <div class="level-grid">
+        <div class="level-card level-blue">
+            <span>Level 0</span>
+            <h3>查無紀錄</h3>
+            <p>目前匯入的公開資料中，未查到符合公司名稱的紀錄。</p>
+        </div>
+
+        <div class="level-card level-green">
+            <span>Level 1</span>
+            <h3>單筆紀錄</h3>
+            <p>查到少量公開紀錄，建議求職者閱讀違反法規與公告日期。</p>
+        </div>
+
+        <div class="level-card level-yellow">
+            <span>Level 2</span>
+            <h3>多筆紀錄</h3>
+            <p>同一事業單位出現多筆公開紀錄，建議比對是否集中於特定類型或時間。</p>
+        </div>
+
+        <div class="level-card level-orange">
+            <span>Level 3</span>
+            <h3>重複出現</h3>
+            <p>同一事業單位多次出現在公開資料中，求職前可特別留意紀錄內容。</p>
+        </div>
+    </div>
 </section>
 
-<!-- 六、資料限制與使用提醒 -->
-<section class="report-card">
-    <h3>六、資料限制與使用提醒</h3>
-    <p>
-        本系統僅整理政府公開資料中已公告之違反勞動法令紀錄。
-        未出現在資料中不代表該事業單位完全沒有勞動爭議；
-        出現在資料中也不代表可直接判斷公司整體工作環境。
-        系統分析結果僅作為求職前了解公開紀錄之參考。
-    </p>
+<section class="explain-panel">
+    <div class="section-heading">
+        <span class="tag">System Function</span>
+        <h2>系統功能定位</h2>
+    </div>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <h2>公司查詢</h2>
+            <p>輸入公司名稱或關鍵字，系統會從已匯入資料中搜尋相關事業單位公開紀錄。</p>
+        </div>
+
+        <div class="feature-card">
+            <h2>趨勢儀表板</h2>
+            <p>整理違規類型分布、縣市分布、重複出現事業單位與資料來源統計。</p>
+        </div>
+
+        <div class="feature-card">
+            <h2>資料處理透明化</h2>
+            <p>公開說明資料來源、清理流程、分類方式與系統限制，提升專題可信度。</p>
+        </div>
+    </div>
 </section>
 
+<section class="explain-panel notice-panel">
+    <div class="section-heading">
+        <span class="tag">Limitation</span>
+        <h2>系統限制與改進方向</h2>
+    </div>
+
+    <ul class="limitation-list">
+        <li>資料內容以公開公告為準，未出現在資料中的公司不代表一定沒有勞動爭議。</li>
+        <li>不同縣市下載檔案欄位可能不完全一致，因此系統需進行欄位標準化與缺值處理。</li>
+        <li>部分縣市可能因外部網站連線狀態暫時下載失敗，系統會保留已成功匯入的資料進行分析。</li>
+        <li>後續可加入公告日期篩選、公司名稱模糊比對、資料更新時間顯示與更細緻的分類規則。</li>
+    </ul>
+</section>
 {% endblock %}

@@ -1,118 +1,281 @@
-# 匯入 pandas
+# 匯入 os，用來檢查檔案是否存在
+import os
+
+# 匯入 traceback，用來顯示完整錯誤
+import traceback
+
+# 匯入 pandas，用來處理資料
 import pandas as pd
 
+# 匯入設定
+from config import ANALYZED_DATA_PATH, SAMPLE_DATA_PATH, STANDARD_COLUMNS
 
-# 讀取分析後資料
-def load_analyzed_data(file_path):
-    # 讀取 CSV
-    df = pd.read_csv(file_path, encoding="utf-8-sig")
+# 匯入資料來源取得函式
+from collectors.gov_open_data_fetcher import download_all_sources
 
-    # 處分金額轉成數字，避免讀取後變字串
-    df["penalty_amount"] = pd.to_numeric(df["penalty_amount"], errors="coerce").fillna(0).astype(int)
+# 匯入資料讀取函式
+from analysis.data_loader import read_data_file
 
-    # 日期欄位轉成字串，避免模板顯示 NaN
-    df["announce_date"] = df["announce_date"].fillna("").astype(str)
-    df["penalty_date"] = df["penalty_date"].fillna("").astype(str)
+# 匯入欄位標準化函式
+from analysis.normalizer import normalize_columns
 
-    # 回傳資料
-    return df
+# 匯入資料清理函式
+from analysis.cleaner import clean_and_classify
 
 
-# 產生 Dashboard 統計摘要
-def generate_summary(df):
-    # 計算總筆數
-    total_records = len(df)
+# 執行完整資料流程
+def run_data_pipeline():
+    # 印出流程開始
+    print("開始執行資料流程...", flush=True)
+
+    # 取得資料來源
+    source_files = download_all_sources()
+
+    # 儲存標準化後的 DataFrame
+    normalized_list = []
+
+    # 逐一處理資料來源
+    for source in source_files:
+        # 取得資料來源名稱
+        source_name = source.get("source_name", "未知資料來源")
+
+        # 取得檔案路徑
+        file_path = source.get("file_path", "")
+
+        try:
+            # 印出讀取狀態
+            print(f"讀取資料來源：{source_name}，路徑：{file_path}", flush=True)
+
+            # 讀取原始資料
+            raw_df = read_data_file(file_path)
+
+            # 將欄位轉成系統標準欄位
+            normalized_df = normalize_columns(raw_df, source_name)
+
+            # 加入列表
+            normalized_list.append(normalized_df)
+
+        except Exception as error:
+            # 單一資料來源失敗不讓整個流程中斷
+            print(f"讀取或標準化資料失敗：{source_name}，錯誤：{error}", flush=True)
+
+    # 如果沒有任何官方資料成功讀取，改用範例資料
+    if not normalized_list:
+        print("沒有任何官方資料成功讀取，改用範例資料。", flush=True)
+
+        # 讀取範例資料
+        raw_df = read_data_file(SAMPLE_DATA_PATH)
+
+        # 標準化範例資料
+        normalized_df = normalize_columns(raw_df, "內建範例資料")
+
+        # 加入列表
+        normalized_list.append(normalized_df)
+
+    # 合併所有標準化資料
+    combined_df = pd.concat(normalized_list, ignore_index=True)
+
+    # 清理與分類
+    final_df = clean_and_classify(combined_df)
+
+    # 輸出分析後 CSV
+    final_df.to_csv(ANALYZED_DATA_PATH, index=False, encoding="utf-8-sig")
+
+    # 印出完成訊息
+    print(f"資料流程完成，共 {len(final_df)} 筆資料。", flush=True)
+
+    # 回傳整理後資料
+    return final_df
+
+
+# 安全載入分析後資料
+def load_analyzed_data():
+    # 如果分析後 CSV 存在，就讀取
+    if os.path.exists(ANALYZED_DATA_PATH):
+        try:
+            # 讀取 CSV
+            df = pd.read_csv(ANALYZED_DATA_PATH, encoding="utf-8-sig")
+
+            # 補齊標準欄位
+            for col in STANDARD_COLUMNS:
+                if col not in df.columns:
+                    df[col] = ""
+
+            # 將金額欄位轉成數字
+            df["penalty_amount"] = (
+                pd.to_numeric(df["penalty_amount"], errors="coerce")
+                .fillna(0)
+                .astype(int)
+            )
+
+            # 回傳標準欄位
+            return df[STANDARD_COLUMNS]
+
+        except Exception as error:
+            # 讀取失敗時印出錯誤
+            print(f"讀取 analyzed_labor_violations.csv 失敗：{error}", flush=True)
+
+    # 若不存在或失敗，回傳空表
+    return pd.DataFrame(columns=STANDARD_COLUMNS)
+
+
+# 啟動時準備資料
+def startup_prepare_data():
+    try:
+        # 每次啟動都嘗試下載與更新資料
+        return run_data_pipeline()
+
+    except Exception as error:
+        # 若資料流程失敗，不讓網站掛掉
+        print("啟動時資料流程失敗，改用既有資料或範例資料。", flush=True)
+        print(f"錯誤：{error}", flush=True)
+        traceback.print_exc()
+
+        # 先嘗試使用既有分析資料
+        existing_df = load_analyzed_data()
+
+        # 如果既有資料非空，直接使用
+        if not existing_df.empty:
+            return existing_df
+
+        # 最後才使用範例資料
+        raw_df = read_data_file(SAMPLE_DATA_PATH)
+        normalized_df = normalize_columns(raw_df, "內建範例資料")
+        final_df = clean_and_classify(normalized_df)
+        final_df.to_csv(ANALYZED_DATA_PATH, index=False, encoding="utf-8-sig")
+        return final_df
+
+
+# 將 value_counts 轉成模板需要的格式
+def series_to_items(series):
+    # 空資料回傳空列表
+    if series is None or series.empty:
+        return []
+
+    # 取得最大值，用來計算長條百分比
+    max_value = int(series.max()) if int(series.max()) > 0 else 1
+
+    # 儲存轉換後資料
+    items = []
+
+    # 逐一轉換
+    for name, value in series.items():
+        # 轉成 int
+        value = int(value)
+
+        # 計算長條百分比
+        percent = round((value / max_value) * 100, 2)
+
+        # 加入結果
+        items.append({
+            "name": str(name) if str(name).strip() else "未標示",
+            "value": value,
+            "percent": percent,
+        })
+
+    # 回傳列表
+    return items
+
+
+# 取得摘要卡資料
+def get_summary_cards(df):
+    # 空資料摘要
+    if df.empty:
+        return {
+            "total_records": 0,
+            "total_companies": 0,
+            "total_cities": 0,
+            "repeated_companies": 0,
+            "total_penalty": 0,
+            "top_category": "無資料",
+            "latest_date": "無資料",
+        }
+
+    # 補齊欄位
+    for col in STANDARD_COLUMNS:
+        if col not in df.columns:
+            df[col] = ""
 
     # 計算事業單位數
-    company_count = df["company_name"].nunique()
-
-    # 計算縣市或主管機關數
-    city_count = df["city"].nunique()
-
-    # 計算總處分金額
-    total_penalty = int(df["penalty_amount"].sum())
-
-    # 計算最高處分金額
-    max_penalty = int(df["penalty_amount"].max()) if total_records > 0 else 0
-
-    # 計算重複出現事業單位數
-    company_record_counts = df["company_name"].value_counts()
-    repeated_company_count = int((company_record_counts > 1).sum())
-
-    # 找出最常見違規類型
-    if total_records > 0:
-        main_category = df["violation_category"].mode().iloc[0]
-    else:
-        main_category = "無資料"
-
-    # 回傳統計摘要
-    return {
-        "total_records": total_records,
-        "company_count": company_count,
-        "city_count": city_count,
-        "total_penalty": total_penalty,
-        "max_penalty": max_penalty,
-        "repeated_company_count": repeated_company_count,
-        "main_category": main_category,
-    }
-
-
-# 將 Series 統計轉成模板容易使用的格式
-def series_to_items(series, limit=10):
-    # 取前幾名並轉成字典列表
-    return [
-        {
-            "label": str(index),
-            "value": int(value)
-        }
-        for index, value in series.head(limit).items()
-    ]
-
-
-# 產生圖表用統計資料
-def generate_dashboard_data(df):
-    # 依縣市統計筆數
-    city_counts = series_to_items(df["city"].value_counts(), limit=10)
-
-    # 依違規類型統計筆數
-    category_counts = series_to_items(df["violation_category"].value_counts(), limit=10)
-
-    # 依事業單位統計重複出現次數
-    company_counts = series_to_items(df["company_name"].value_counts(), limit=10)
-
-    # 建立年份欄位
-    year_series = df["announce_date"].astype(str).str.slice(0, 4)
-
-    # 只保留看起來像西元年的資料
-    year_series = year_series[year_series.str.match(r"^\d{4}$", na=False)]
-
-    # 依年份統計筆數
-    year_counts = series_to_items(year_series.value_counts().sort_index(), limit=20)
-
-    # 建立處分金額區間
-    amount_bins = pd.cut(
-        df["penalty_amount"],
-        bins=[-1, 0, 20000, 50000, 100000, 300000, 100000000],
-        labels=["0", "1-2萬", "2-5萬", "5-10萬", "10-30萬", "30萬以上"]
+    company_count = int(
+        df["company_name"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .replace("", pd.NA)
+        .dropna()
+        .nunique()
     )
 
-    # 統計金額區間
-    amount_counts = series_to_items(amount_bins.value_counts().sort_index(), limit=10)
+    # 計算縣市數
+    city_count = int(
+        df["city"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .replace("", pd.NA)
+        .dropna()
+        .nunique()
+    )
 
-    # 回傳 Dashboard 資料
+    # 計算重複出現事業單位數
+    company_counts = df["company_name"].dropna().astype(str).str.strip().value_counts()
+    repeated_companies = int((company_counts >= 2).sum())
+
+    # 找出最多的違規類型
+    category_counts = df["violation_category"].dropna().astype(str).str.strip().value_counts()
+    top_category = category_counts.index[0] if not category_counts.empty else "無資料"
+
+    # 找出最近公告日期
+    dates = df["announce_date"].dropna().astype(str).str.strip()
+    dates = dates[dates != ""]
+    latest_date = str(dates.max()) if not dates.empty else "無資料"
+
+    # 計算總處分金額
+    total_penalty = int(pd.to_numeric(df["penalty_amount"], errors="coerce").fillna(0).sum())
+
+    # 回傳摘要資料
     return {
-        "city_counts": city_counts,
-        "category_counts": category_counts,
-        "company_counts": company_counts,
-        "year_counts": year_counts,
-        "amount_counts": amount_counts,
+        "total_records": int(len(df)),
+        "total_companies": company_count,
+        "total_cities": city_count,
+        "repeated_companies": repeated_companies,
+        "total_penalty": total_penalty,
+        "top_category": top_category,
+        "latest_date": latest_date,
     }
 
 
-# 取得最近幾筆紀錄
-def get_recent_records(df, limit=30):
-    # 依公告日期排序
-    sorted_df = df.sort_values(by="announce_date", ascending=False)
+# 取得 Dashboard 資料
+def get_dashboard_data(df):
+    # 空資料回傳空結構
+    if df.empty:
+        return {
+            "summary": get_summary_cards(df),
+            "category_items": [],
+            "city_items": [],
+            "top_company_items": [],
+            "source_items": [],
+        }
 
-    # 回傳前幾筆 dict
-    return sorted_df.head(limit).to_dict(orient="records")
+    # 補齊欄位
+    for col in STANDARD_COLUMNS:
+        if col not in df.columns:
+            df[col] = ""
+
+    # 回傳 Dashboard 所需資料
+    return {
+        "summary": get_summary_cards(df),
+        "category_items": series_to_items(
+            df["violation_category"].fillna("未分類").value_counts().head(10)
+        ),
+        "city_items": series_to_items(
+            df["city"].fillna("未標示").value_counts().head(10)
+        ),
+        "top_company_items": series_to_items(
+            df["company_name"].fillna("未標示").value_counts().head(10)
+        ),
+        "source_items": series_to_items(
+            df["source_name"].fillna("未標示").value_counts().head(10)
+        ),
+    }

@@ -5,31 +5,35 @@
 {% block content %}
 <section class="page-header dashboard-header">
     <span class="tag">Dashboard</span>
+
     <h1>趨勢儀表板</h1>
+
     <p>
-        系統依據勞動部動態下載之公開資料，整理公開紀錄筆數、縣市分布、違規類型與重複出現事業單位。
+        系統依據勞動部動態下載之公開資料，整理公開紀錄筆數、縣市分布、
+        違規類型與重複出現事業單位。部分縣市可能因網站連線狀態而暫時下載失敗，
+        系統會保留成功匯入資料進行分析。
     </p>
 </section>
 
 <section class="stats-grid">
     <div class="stat-card">
         <p>公開紀錄筆數</p>
-        <h2>{{ summary.total_records | default(0) }}</h2>
+        <h2>{{ summary.total_records }}</h2>
     </div>
 
     <div class="stat-card">
         <p>事業單位數</p>
-        <h2>{{ summary.total_companies | default(0) }}</h2>
+        <h2>{{ summary.total_companies }}</h2>
     </div>
 
     <div class="stat-card">
         <p>涵蓋縣市 / 主管機關</p>
-        <h2>{{ summary.total_cities | default(0) }}</h2>
+        <h2>{{ summary.total_cities }}</h2>
     </div>
 
     <div class="stat-card warning">
         <p>重複出現事業單位</p>
-        <h2>{{ summary.repeated_companies | default(0) }}</h2>
+        <h2>{{ summary.repeated_companies }}</h2>
     </div>
 </section>
 
@@ -43,23 +47,19 @@
             <p>依違規內容關鍵字分類，協助快速理解主要問題類型。</p>
         </div>
 
-        {% if category_items %}
-            <div class="bar-list">
-                {% for item in category_items %}
-                <div class="bar-row">
-                    <div class="bar-label">
-                        <span>{{ item.name }}</span>
-                        <strong>{{ item.value }} 筆</strong>
-                    </div>
-                    <div class="bar-track">
-                        <div class="bar-fill" style="width: {{ item.percent | default(0) }}%;"></div>
-                    </div>
+        <div class="bar-list">
+            {% for item in category_items %}
+            <div class="bar-row">
+                <div class="bar-label">
+                    <span>{{ item.name }}</span>
+                    <strong>{{ item.value }} 筆</strong>
                 </div>
-                {% endfor %}
+                <div class="bar-track">
+                    <div class="bar-fill" data-percent="{{ item.percent }}"></div>
+                </div>
             </div>
-        {% else %}
-            <p class="muted">目前沒有可顯示的分類資料。</p>
-        {% endif %}
+            {% endfor %}
+        </div>
     </div>
 
     <div class="dashboard-panel large-panel">
@@ -68,26 +68,22 @@
                 <span class="panel-kicker">Region</span>
                 <h2>縣市 / 主管機關分布</h2>
             </div>
-            <p>呈現目前成功下載與匯入的縣市公開紀錄分布。</p>
+            <p>呈現目前成功下載並匯入的縣市公開紀錄分布。</p>
         </div>
 
-        {% if city_items %}
-            <div class="bar-list">
-                {% for item in city_items %}
-                <div class="bar-row">
-                    <div class="bar-label">
-                        <span>{{ item.name }}</span>
-                        <strong>{{ item.value }} 筆</strong>
-                    </div>
-                    <div class="bar-track">
-                        <div class="bar-fill" style="width: {{ item.percent | default(0) }}%;"></div>
-                    </div>
+        <div class="bar-list">
+            {% for item in city_items %}
+            <div class="bar-row">
+                <div class="bar-label">
+                    <span>{{ item.name }}</span>
+                    <strong>{{ item.value }} 筆</strong>
                 </div>
-                {% endfor %}
+                <div class="bar-track">
+                    <div class="bar-fill" data-percent="{{ item.percent }}"></div>
+                </div>
             </div>
-        {% else %}
-            <p class="muted">目前沒有可顯示的縣市資料。</p>
-        {% endif %}
+            {% endfor %}
+        </div>
     </div>
 
     <div class="dashboard-panel">
@@ -98,19 +94,15 @@
             </div>
         </div>
 
-        {% if top_company_items %}
-            <div class="rank-list">
-                {% for item in top_company_items %}
-                <div class="rank-row">
-                    <span class="rank-number">{{ loop.index }}</span>
-                    <span class="rank-name">{{ item.name }}</span>
-                    <strong>{{ item.value }} 筆</strong>
-                </div>
-                {% endfor %}
+        <div class="rank-list">
+            {% for item in top_company_items %}
+            <div class="rank-row">
+                <span class="rank-number">{{ loop.index }}</span>
+                <span class="rank-name">{{ item.name }}</span>
+                <strong>{{ item.value }} 筆</strong>
             </div>
-        {% else %}
-            <p class="muted">目前沒有重複出現事業單位資料。</p>
-        {% endif %}
+            {% endfor %}
+        </div>
     </div>
 
     <div class="dashboard-panel">
@@ -121,19 +113,35 @@
             </div>
         </div>
 
-        {% if source_items %}
-            <div class="rank-list">
-                {% for item in source_items %}
-                <div class="rank-row">
-                    <span class="rank-number">{{ loop.index }}</span>
-                    <span class="rank-name">{{ item.name }}</span>
-                    <strong>{{ item.value }} 筆</strong>
-                </div>
-                {% endfor %}
+        <div class="rank-list">
+            {% for item in source_items %}
+            <div class="rank-row">
+                <span class="rank-number">{{ loop.index }}</span>
+                <span class="rank-name">{{ item.name }}</span>
+                <strong>{{ item.value }} 筆</strong>
             </div>
-        {% else %}
-            <p class="muted">目前沒有資料來源統計。</p>
-        {% endif %}
+            {% endfor %}
+        </div>
     </div>
 </section>
+
+<script>
+    // 頁面載入後，讀取 data-percent，設定長條圖寬度
+    document.addEventListener("DOMContentLoaded", function () {
+        // 找出所有有 data-percent 的長條
+        const bars = document.querySelectorAll(".bar-fill[data-percent]");
+
+        // 逐一設定寬度
+        bars.forEach(function (bar) {
+            // 取得百分比數值
+            const rawPercent = Number(bar.dataset.percent || 0);
+
+            // 限制在 0 到 100 之間，避免資料異常造成版面破掉
+            const safePercent = Math.min(100, Math.max(0, rawPercent));
+
+            // 設定長條寬度
+            bar.style.width = safePercent + "%";
+        });
+    });
+</script>
 {% endblock %}

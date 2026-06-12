@@ -1,49 +1,82 @@
-<!-- 繼承共同版型 -->
 {% extends "base.html" %}
 
-<!-- 頁面內容開始 -->
+{% block title %}公開紀錄｜JobCheck{% endblock %}
+
 {% block content %}
+<section class="page-header">
+    <span class="tag">Records</span>
 
-<!-- 頁面標題 -->
-<h2 class="page-title">公開紀錄列表</h2>
+    <h1>公開紀錄列表</h1>
 
-<!-- 說明卡片 -->
-<section class="info-card">
     <p>
-        本頁顯示系統整理後的公開違反勞動法令紀錄。資料已經過欄位標準化、
-        日期格式清理、處分金額轉換與違規類型分類。
+        以下顯示系統目前匯入的前 200 筆公開紀錄。每筆資料會依同一事業單位在公開資料中出現的次數，
+        顯示「公開紀錄觀察標籤」，方便快速理解資料狀態。
     </p>
 </section>
 
-<!-- 資料表格 -->
-<div class="table-wrapper">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>公告日期</th>
-                <th>縣市／機關</th>
-                <th>事業單位</th>
-                <th>分類</th>
-                <th>違反法規</th>
-                <th>違規內容</th>
-                <th>處分金額</th>
-            </tr>
-        </thead>
+<section class="label-legend-panel">
+    <h2>公開紀錄觀察標籤</h2>
 
-        <tbody>
-            {% for record in records %}
-            <tr>
-                <td>{{ record.announce_date }}</td>
-                <td>{{ record.city }}</td>
-                <td>{{ record.company_name }}</td>
-                <td><span class="badge">{{ record.violation_category }}</span></td>
-                <td>{{ record.violated_law }}</td>
-                <td>{{ record.violation_content }}</td>
-                <td>{{ "{:,}".format(record.penalty_amount) }} 元</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <div class="label-legend-grid">
+        <div class="legend-item">
+            <span class="record-label label-blue">查無紀錄</span>
+            <p>目前匯入資料中未查到相關公開紀錄。</p>
+        </div>
 
+        <div class="legend-item">
+            <span class="record-label label-green">單筆紀錄</span>
+            <p>查到 1 筆公開紀錄，建議閱讀公告內容。</p>
+        </div>
+
+        <div class="legend-item">
+            <span class="record-label label-yellow">多筆紀錄</span>
+            <p>同一事業單位有 2～4 筆公開紀錄。</p>
+        </div>
+
+        <div class="legend-item">
+            <span class="record-label label-orange">重複出現</span>
+            <p>同一事業單位有 5 筆以上公開紀錄。</p>
+        </div>
+    </div>
+</section>
+
+<section class="table-panel">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>觀察標籤</th>
+                    <th>公告日期</th>
+                    <th>縣市</th>
+                    <th>事業單位名稱</th>
+                    <th>同公司筆數</th>
+                    <th>違規類型</th>
+                    <th>違反法規</th>
+                    <th>法條敘述</th>
+                    <th>處分金額</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>
+                        <span class="record-label {{ record.observation_class }}">
+                            {{ record.observation_label }}
+                        </span>
+                    </td>
+                    <td>{{ record.announce_date }}</td>
+                    <td>{{ record.city }}</td>
+                    <td>{{ record.company_name }}</td>
+                    <td>{{ record.company_record_count }} 筆</td>
+                    <td>{{ record.violation_category }}</td>
+                    <td>{{ record.violated_law }}</td>
+                    <td>{{ record.violation_content }}</td>
+                    <td>{{ record.penalty_amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endblock %}

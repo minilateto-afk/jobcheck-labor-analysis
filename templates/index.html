@@ -1,82 +1,129 @@
-<!-- 繼承共同版型 -->
 {% extends "base.html" %}
 
-<!-- 頁面內容開始 -->
+{% block title %}首頁｜JobCheck{% endblock %}
+
 {% block content %}
-
-<!-- 首頁主視覺卡片 -->
 <section class="hero-card">
-    <div>
-        <span class="tag">Open Data Analysis</span>
-        <h2>求職前，先查詢公開勞動違規紀錄</h2>
-        <p>
-            本系統整合政府公開違反勞動法令資料，將不同來源的事業單位名稱、
-            違反法規、違規內容與處分金額進行欄位標準化與分類整理，
-            提供公司查詢、求職摘要卡與趨勢視覺化分析。
-        </p>
+    <span class="tag">Open Data Analysis</span>
 
-        <!-- 搜尋表單 -->
-        <form class="search-box" action="/search" method="get">
-            <input type="text" name="keyword" placeholder="輸入公司名稱，例如：星河科技">
-            <button type="submit">查詢公開紀錄</button>
-        </form>
+    <h1>求職前，先查詢公開勞動違規紀錄</h1>
 
-        <!-- 如果重新整理資料成功，就顯示提示 -->
-        {% if refreshed %}
-        <div class="notice success">資料已重新整理完成。</div>
-        {% endif %}
+    <p>
+        本系統於啟動時自動連線至勞動部公開查詢系統，下載並整理違反勞動法令公開資料，
+        將事業單位名稱、違反法規、法條敘述與處分金額進行欄位標準化與分類整理，
+        提供公司查詢、求職摘要卡與趨勢視覺化分析。
+    </p>
+
+    <form class="search-form" action="/search" method="get">
+        <input type="text" name="keyword" placeholder="輸入公司名稱，例如：科技、餐飲、營造">
+        <button type="submit">查詢公開紀錄</button>
+    </form>
+</section>
+
+<section class="stats-grid">
+    <div class="stat-card">
+        <p>公開紀錄筆數</p>
+        <h2>{{ summary.total_records }}</h2>
+    </div>
+
+    <div class="stat-card">
+        <p>事業單位數</p>
+        <h2>{{ summary.total_companies }}</h2>
+    </div>
+
+    <div class="stat-card">
+        <p>涵蓋縣市 / 主管機關</p>
+        <h2>{{ summary.total_cities }}</h2>
+    </div>
+
+    <div class="stat-card warning">
+        <p>重複出現事業單位</p>
+        <h2>{{ summary.repeated_companies }}</h2>
     </div>
 </section>
 
-<!-- 統計卡片 -->
-<section class="summary-grid">
-    <div class="summary-card">
-        <span>公開紀錄筆數</span>
-        <strong>{{ summary.total_records }}</strong>
-    </div>
-
-    <div class="summary-card">
-        <span>事業單位數</span>
-        <strong>{{ summary.company_count }}</strong>
-    </div>
-
-    <div class="summary-card">
-        <span>涵蓋縣市／主管機關</span>
-        <strong>{{ summary.city_count }}</strong>
-    </div>
-
-    <div class="summary-card warning">
-        <span>重複出現事業單位</span>
-        <strong>{{ summary.repeated_company_count }}</strong>
-    </div>
-</section>
-
-<!-- 功能介紹 -->
 <section class="feature-grid">
     <div class="feature-card">
-        <h3>公司公開紀錄查詢</h3>
+        <h2>公司公開紀錄查詢</h2>
         <p>輸入公司名稱後，系統會搜尋公開資料中的事業單位名稱，整理相關公告紀錄。</p>
     </div>
 
     <div class="feature-card">
-        <h3>違規類型分類</h3>
-        <p>依違規內容關鍵字，將資料分類為工時、薪資、休假、職安等求職者較容易理解的類型。</p>
+        <h2>違規類型分類</h2>
+        <p>依違規內容與法規條款關鍵字，將資料分類為工時、薪資、休假、職安等類型。</p>
     </div>
 
     <div class="feature-card">
-        <h3>求職參考摘要</h3>
-        <p>系統會整理公開紀錄筆數、最近公告日期、主要違規類型與處分金額，作為求職參考。</p>
+        <h2>求職參考摘要</h2>
+        <p>系統整理公開紀錄筆數、最近公告日期、主要違規類型與處分金額，作為求職參考。</p>
     </div>
 </section>
 
-<!-- 使用限制提醒 -->
-<section class="info-card">
-    <h2>使用提醒</h2>
-    <p>
-        本系統僅整理政府公開資料中已公告之違反勞動法令紀錄，
-        不代表對公司整體工作環境或雇主品質進行評價。
-        查詢結果應作為求職前了解公開紀錄之參考。
-    </p>
+<section class="dashboard-layout compact-dashboard">
+    <div class="dashboard-panel">
+        <div class="panel-title-row">
+            <div>
+                <span class="panel-kicker">Category</span>
+                <h2>主要違規類型</h2>
+            </div>
+        </div>
+
+        <div class="bar-list">
+            {% for item in category_items[:5] %}
+            <div class="bar-row">
+                <div class="bar-label">
+                    <span>{{ item.name }}</span>
+                    <strong>{{ item.value }} 筆</strong>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill" data-percent="{{ item.percent }}"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="dashboard-panel">
+        <div class="panel-title-row">
+            <div>
+                <span class="panel-kicker">Region</span>
+                <h2>縣市分布</h2>
+            </div>
+        </div>
+
+        <div class="bar-list">
+            {% for item in city_items[:5] %}
+            <div class="bar-row">
+                <div class="bar-label">
+                    <span>{{ item.name }}</span>
+                    <strong>{{ item.value }} 筆</strong>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill" data-percent="{{ item.percent }}"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </section>
 
+<script>
+    // 頁面載入後，讀取 data-percent，設定長條圖寬度
+    document.addEventListener("DOMContentLoaded", function () {
+        // 找出所有有 data-percent 的長條
+        const bars = document.querySelectorAll(".bar-fill[data-percent]");
+
+        // 逐一設定寬度
+        bars.forEach(function (bar) {
+            // 取得百分比數值
+            const rawPercent = Number(bar.dataset.percent || 0);
+
+            // 限制在 0 到 100 之間，避免資料異常造成版面破掉
+            const safePercent = Math.min(100, Math.max(0, rawPercent));
+
+            // 設定長條寬度
+            bar.style.width = safePercent + "%";
+        });
+    });
+</script>
 {% endblock %}
