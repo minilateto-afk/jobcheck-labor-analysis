@@ -1,5 +1,40 @@
+# Python 快取檔案，不需要上傳到 GitHub
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Python 虛擬環境，不需要上傳
+.venv/
+venv/
+env/
+
+# 環境變數檔案，可能包含本機設定或機密資訊
 .env
+
+# macOS 系統自動產生的檔案
 .DS_Store
-data/raw/downloaded/*.zip
+
+# VS Code 本機設定，可依需要保留或忽略
+.vscode/
+
+# Docker / Flask 執行時可能產生的暫存資料
+*.log
+
+# 原始下載資料通常很大，GitHub 不適合全部上傳
+data/raw/downloaded/
+
+# 保留 processed 與 cpp 資料，因為作品展示和 C++ Core 需要使用
+# data/processed/analyzed_labor_violations.csv 不忽略
+# data/cpp/labor_records_cpp.csv 不忽略
+
+# C++ 編譯後的執行檔，不需要上傳
+cpp_core/jobcheck_cpp
+cpp_core/jobcheck_cpp.exe
+
+# C++ 編譯產生的物件檔
+cpp_core/*.o
+cpp_core/*.obj
+
+# C++ 執行截圖可以保留，但暫存圖片可自行決定
+# cpp_core/screenshots/
